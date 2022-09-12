@@ -23,8 +23,9 @@ import java.util.Calendar;
 @PropertySource("classpath:/application.properties")
 public class TranslateController {
 
-    //@Value("${api-iam-token}")
-    private final String apiKey= IAMTokenRequester.excCommand();
+
+    @Value("${api-iam-token}")
+    private String apiKey; //= IAMTokenRequester.excCommand();
 
     @Value("${folderId}")
     private String folderId;
