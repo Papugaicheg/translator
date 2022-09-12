@@ -6,6 +6,7 @@ import com.tinkoff.translator.db.JDBCUtils;
 import com.tinkoff.translator.model.JSON;
 import com.tinkoff.translator.model.Request;
 import com.tinkoff.translator.services.IAMTokenRequester;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.sql.Date;
 import java.util.Calendar;
