@@ -5,7 +5,7 @@ import com.tinkoff.translator.StringTranslator;
 import com.tinkoff.translator.db.JDBCUtils;
 import com.tinkoff.translator.model.JSON;
 import com.tinkoff.translator.model.Request;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.tinkoff.translator.services.IAMTokenRequester;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,8 +23,7 @@ import java.util.Calendar;
 public class TranslateController {
 
 
-    @Value("${api-iam-token}")
-    private String apiKey;
+    private final String apiKey = IAMTokenRequester.excCommand();
 
     @Value("${folderId}")
     private String folderId;

@@ -33,47 +33,61 @@ public class StringTranslator {
 
     public StringTranslator(JSON json, Request request, String key, String folderId) throws IOException {
 
-        CopyOnWriteArrayList<String> listOfWords = new CopyOnWriteArrayList<>();
-        StringBuffer resultString = new StringBuffer();
         String[] lang = json.getLanguage().split("-");
 
-        listOfWords.addAll(Arrays.asList(json.getString().split(" ")));
-
-
+        CopyOnWriteArrayList<String> listOfWords = new CopyOnWriteArrayList<>(Arrays.asList(json.getString().split(" ")));
+        String[] str = new String[listOfWords.size()];
         ExecutorService service = Executors.newFixedThreadPool(10);
-        for (String word : listOfWords) {
-            Word wordObj = new Word(request.getId(), word, null);
-            JsonRequest jsonRequest = new JsonRequest(lang[0], lang[1], word, folderId);
+        for (int i = 0; i < listOfWords.size(); i++) {
+            Word wordObj = new Word(request.getId(), listOfWords.get(i), null);
+            JsonRequest jsonRequest = new JsonRequest(lang[0], lang[1], listOfWords.get(i), folderId);
             ObjectMapper mapper = new ObjectMapper();
             String jsonString = mapper.writeValueAsString(jsonRequest);
-            Callable<String> task = () -> translateWord(key, jsonString);
+            int finalI = i;
+            Runnable r = () -> {
+                try {
+                    wordObj.setWordTranslated(translateWord(key, jsonString));
+                    str[finalI] = wordObj.getWordTranslated();
+                    try {
+                        JDBCUtils.insertWordsQuery(wordObj);
 
-            try {
-                String translatedWord = service.submit(task).get();
-                resultString.append(translatedWord).append(" ");
-                wordObj.setWordTranslated(translatedWord);
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-            }
-            try {
-                JDBCUtils.insertWordsQuery(wordObj);
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                } catch (IOException | InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                if (finalI == listOfWords.size() - 1) {
 
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+                    service.shutdown();
 
+                }
+
+            };
+
+
+            service.execute(r);
+
+
+        }//end for
+        while (true) {
+            if (service.isShutdown()) break;
         }
-        request.setOutputString(resultString.toString());
+
+
+        request.setOutputString(String.join(" ", str));
         try {
             JDBCUtils.updateRequestQuery(request);
 
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        this.result = request.getOutputString().substring(0, request.getOutputString().length() - 1);
+        this.result = request.getOutputString();
+
     }
 
-    private String translateWord(String key, String jsonString) throws IOException {
+    private String translateWord(String key, String jsonString) throws IOException, InterruptedException {
+
         URL url = new URL("https://translate.api.cloud.yandex.net/translate/v2/translate");
 
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -104,6 +118,7 @@ public class StringTranslator {
 
         String translatedWord = node.findValue("text").toString();
 
+        Thread.sleep(500);
         return translatedWord.substring(1, translatedWord.length() - 1);
     }
 

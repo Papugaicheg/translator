@@ -7,16 +7,17 @@ import java.sql.*;
 
 public class JDBCUtils {
     static final String JDBC_DRIVER = "org.h2.Driver";
-    static final String DB_URL = "jdbc:h2:file:D:/translator/translator/db";
+    static final String DB_URL = "jdbc:h2:mem:tran";
     static final String USER = "sa";
     static final String PASSWORD = "password";
 
-    private static final String createTables = "drop table if exists WORDS;drop table if exists REQUESTS;\n" +
-            "                                   CREATE TABLE REQUESTS (ID LONG PRIMARY KEY AUTO_INCREMENT,\n" +
-            "                                   INPUT VARCHAR,\n" +
-            "                                   OUTPUT VARCHAR, DATE DATETIME,LANGUAGES VARCHAR, IP VARCHAR);\n" +
-            "                                   CREATE TABLE WORDS (ID LONG, WORD VARCHAR, WORD_TRANSLATED VARCHAR,PRIMARY KEY(ID,WORD),\n" +
-            "                                   FOREIGN KEY (ID) REFERENCES REQUESTS(ID));";
+    private static final String createTables = """
+                                               drop table if exists WORDS;drop table if exists REQUESTS;
+                                               CREATE TABLE REQUESTS (ID LONG PRIMARY KEY AUTO_INCREMENT,
+                                               INPUT VARCHAR,
+                                               OUTPUT VARCHAR, DATE DATETIME,LANGUAGES VARCHAR, IP VARCHAR);
+                                               CREATE TABLE WORDS (ID LONG, WORD VARCHAR, WORD_TRANSLATED VARCHAR,PRIMARY KEY(ID,WORD),
+                                               FOREIGN KEY (ID) REFERENCES REQUESTS(ID));""";
 
     public static Connection getConnection(){
         Connection connection = null;
@@ -57,13 +58,13 @@ public class JDBCUtils {
 
     }
     public static void insertWordsQuery(Word word) throws SQLException {
-        String sql = "INSERT INTO WORDS(ID,WORD,WORD_TRANSLATED) VALUES(?,?,?);";
+        String sql = "" +
+                "INSERT IGNORE INTO WORDS(ID,WORD,WORD_TRANSLATED) VALUES(?,?,?);";
         try(Connection connection = JDBCUtils.getConnection()) {
             PreparedStatement statement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
             statement.setLong(1, word.getId());
             statement.setString(2, word.getWord());
             statement.setString(3, word.getWordTranslated());
-
             statement.execute();
             connection.close();
             statement.close();
@@ -89,7 +90,6 @@ public class JDBCUtils {
                 key = rs.getLong(1);
             }
             request.setId(key);
-            System.out.println(request.getId());
             connection.close();
             statement.close();
         }catch (SQLException e) {
